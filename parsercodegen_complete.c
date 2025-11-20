@@ -379,8 +379,12 @@ void statement(){
     }
     getNextToken();
     statement();
-    getNextToken();
     code[jpcIdx].m = codeIdx;
+    if(tokenList[tokenInd] != fisym){
+        exit(1);
+
+    }
+    getNextToken();
     return;
   }
 

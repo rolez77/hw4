@@ -243,21 +243,33 @@ int base ( int BP , int L ) {
 }
 
 void printHelper(int bp, int sp){
-    printf("\t");
-    if (sp >= 434) {
-        // No local variables allocated yet - print everything together
-        for (int i = 439; i >= sp; i--) {
-            printf("%d ", pas[i]);
+printf("\t");
+
+
+    int bottom = bp;
+    while (pas[bottom - 1] != 0) { 
+        bottom = pas[bottom - 1];
+    }
+
+    for (int i = bottom; i >= sp; i--) {
+        int temp = bp;
+        int is_boundary = 0;
+    
+        if (i == temp) is_boundary = 1;
+        else {
+            int scanner = bp;
+            while (pas[scanner - 1] != 0) {
+                scanner = pas[scanner - 1];
+                if (scanner == i) {
+                    is_boundary = 1;
+                    break;
+                }
+            }
         }
-    } else {
-        // Local variables allocated - show main stack | procedure stack
-        for (int i = 439; i >= 434; i--) {
-            printf("%d ", pas[i]);
+        if (is_boundary && i != bottom) {
+            printf("| ");
         }
-        printf("| ");
-        for (int i = 433; i >= sp; i--) {
-            printf("%d ", pas[i]);
-        }
+        printf("%d ", pas[i]);
     }
     printf("\n");
 }

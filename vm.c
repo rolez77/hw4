@@ -38,6 +38,12 @@ typedef struct ir{
 } InstructionRegister;
 
 int main(int argc, char *argv[]) {
+
+    //Check arg count
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s elf.txt\n", argv[0]);
+        return 1;
+    }
     //initalize variables
     int op, l, m;
     // adress

@@ -144,9 +144,10 @@ void addToken(TokenType type, const char* lexeme, int val){
 }
 
 int main(int argc, char *argv[]) {
-    if(argc != 2){
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <input_file.txt>\n", argv[0]);
         return 1;
-    }
+    }    
     //file handling
     FILE* f = fopen(argv[1],"r");
     if(f == NULL){
@@ -188,47 +189,49 @@ int main(int argc, char *argv[]) {
             };
             continue;
         }
-        // identifier check
-        if(isLetter(c)){
+       // identifier check
+        if (isLetter(c)) {
             char buffer[50];
             int j = 0;
-            // read while we have letters or digits
-            while(isLetter(characters[i]) || isDigit(characters[i])){
-                if(j < MAX_CHAR_LEN ){
-                    buffer[j++] = characters[i];
-                }
+            int rawlen = 0;
+            while (isLetter(characters[i]) || isDigit(characters[i])) {
+                if (j < MAX_CHAR_LEN) buffer[j++] = characters[i];
+                rawlen++;
                 i++;
             }
             buffer[j] = '\0';
-            // if the string is too long return error
-            if(j > MAX_CHAR_LEN){
-                addToken(identsym, "Too long", 0);
+            
+            //put skipsym if length is too long
+            if (rawlen > MAX_CHAR_LEN) {
+                addToken(skipsym, "ident too long", 0);
+            } else {
+                TokenType t = reserveWord(buffer);
+                addToken(t, buffer, 0);
             }
-            //otherwise, add the token, checking if it's a reserved word
-            TokenType t = reserveWord(buffer);
-            addToken(t, buffer, 0);
             continue;
         }
+
         // number check
-        if(isDigit(c)){
+        if (isDigit(c)) {
             char buffer[50];
             int j = 0;
-            // read while we have digits
-            while(isDigit(characters[i])){
-                if(j < MAX_CHAR_LEN ){
-                    buffer[j++] = characters[i];
-                }
+            int rawlen = 0;
+            while (isDigit(characters[i])) {
+                if (j < MAX_DIG) buffer[j++] = characters[i];
+                rawlen++;
                 i++;
             }
             buffer[j] = '\0';
-            // if the number is too long return error
-            if(j > MAX_DIG){
-                addToken(numbersym, "# too long", 0);
+            
+            //If number is too big add skipsym for # too long
+            if (rawlen > MAX_DIG) {
+                addToken(skipsym, "number too long", 0);
+            } else {
+                addToken(numbersym, buffer, atoi(buffer));
             }
-            //add
-            addToken(numbersym, buffer, atoi(buffer));
-            continue;   
+            continue;
         }
+
 
         // special symbol check
         char buf[3] = {0};
@@ -272,7 +275,7 @@ int main(int argc, char *argv[]) {
             //printf("%d %s ", tokenList[j].type, tokenList[j].lexeme);
             fprintf(tf, "%d %s ", tokenList[j].type, tokenList[j].lexeme);
         } else if (tokenList[j].type == skipsym) {
-            continue;
+            fprintf(tf, "1 ");
         } else {
             // print to console
             //printf("%d ", tokenList[j].type);

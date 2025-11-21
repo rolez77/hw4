@@ -224,6 +224,7 @@ int main(int argc, char *argv[]) {
                 break;
             default:
                 printf("Invalid OP code: %d\n",ir.op);
+                halt=1;
                 break;
         }
     }

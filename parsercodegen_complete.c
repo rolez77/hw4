@@ -176,6 +176,11 @@ const char* errorMessages[] = {
     "condition must contain comparison operator",//13
     "right parenthesis must follow left parenthesis",//14
     "arithmetic equations must contain operands, parentheses, numbers, or symbols"//15
+    "else must be followed by fi", //16
+    "if statement must include else clause",//17
+    "procedure declaration must be followed by a semicolon",//18
+    "call statement may only target procedures"
+
 };
 
 
@@ -232,6 +237,15 @@ void addToSymbolTable(int kind, const char* name, int val, int level, int addr){
 
 }
 
+void mark(int level){
+    for (int i = symbolInd - 1; i >= 0; i--) {
+        if (symbol_table[i].level == level) {
+            symbol_table[i].mark = 1;
+        }
+        if (symbol_table[i].level < level) break;
+    }
+}
+
 void program(){
     emit(JMP,0,0); // jump to main block
     block();
@@ -243,11 +257,22 @@ void program(){
 }
 
 void block(){
+int jump_idx = 0;
+    if (currentLevel > 0) {
+        jump_idx = codeIdx;
+        emit(JMP, 0, 0);
+    } else {
+        jump_idx = 0; 
+    }
+
     constDeclaration();
     int numVars = varDeclaration();
-    code[0].m = 3;
-    emit(INC,0,3+numVars);
+    procedureDeclaration();
+    code[jump_idx].m = codeIdx * 3;
+
+    emit(INC, 0, 3 + numVars);
     statement();
+    mark(currentLevel);
 
 }
 
@@ -289,9 +314,11 @@ void constDeclaration(){
 }
 
 int varDeclaration(){
+    int localNumVars =0;
     if(tokenList[tokenInd] == varsym){
         do{
-            numVars++;
+            localNumVars++;
+            //numVars++;
             getNextToken();
             if(tokenList[tokenInd]!=identsym){
                 printf("%s",errorMessages[2]);
@@ -301,7 +328,7 @@ int varDeclaration(){
                 printf("%s",errorMessages[7]);
                 return 0;
             }
-            addToSymbolTable(2, identifierList[tokenInd], 0, 0, 3+numVars-1);
+            addToSymbolTable(2, identifierList[tokenInd], 0, 0, 3+localNumVars-1);
             getNextToken();
         }while(tokenList[tokenInd] == commasym);
         if(tokenList[tokenInd] != semicolonsym){
@@ -310,7 +337,7 @@ int varDeclaration(){
         }
         getNextToken();
     }
-    return numVars;
+    return localNumVars;
 }
 
 void procedureDeclaration(){
@@ -320,15 +347,30 @@ void procedureDeclaration(){
             printf("%s",errorMessages[2]);
             return;
         }
-        getNextToken();
-        if(tokenList[tokenInd] != semicolonsym){
-            printf("%s",errorMessages[6]);
-            return;
-        }
-        getNextToken();
         char identifierName[12];
         strcpy(identifierName, identifierList[tokenInd]);
-        addToSymbolTable(3,identifierName, 0, 0, codeIdx);
+        addToSymbolTable(3,identifierName, 0, currentLevel, codeIdx*3);
+        getNextToken();
+
+        if(tokenList[tokenInd] != semicolonsym){
+            printf("%s\n", errorMessages[6]);
+            exit(1);
+        }
+        getNextToken(); 
+        
+        currentLevel++; 
+        
+        block();        
+        
+        emit(OPR, 0, 0); 
+        mark(currentLevel);
+        currentLevel--; 
+        
+        if(tokenList[tokenInd] != semicolonsym){
+            printf("%s\n", errorMessages[6]); 
+            exit(1);
+        }
+        getNextToken(); 
     }
 }
 
@@ -354,6 +396,28 @@ void statement(){
     emit(STO,0,symbol_table[symIdx].addr);
     return;
   }
+
+  if(tokenList[tokenInd]==callsym){
+    getNextToken();
+    if(tokenList[tokenInd] != identsym){
+        printf("%s",errorMessages[2]);
+        return;
+    }
+    int idx = symbolTableCheck(identifierList[tokenInd]);
+    if(idx== -1){
+        printf("%s",errorMessages[7]);
+        return;
+    }
+    if(symbol_table[idx].kind!=3){
+        printf("%s",errorMessages[7]);
+        return;
+    }
+
+    emit(CAL, currentLevel-symbol_table[idx].level, symbol_table[idx].addr);
+    getNextToken();
+    return;
+  }
+
   if(tokenList[tokenInd] ==beginsym){
     do{
         getNextToken();
